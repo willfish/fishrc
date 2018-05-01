@@ -116,9 +116,8 @@ function load_secrets -d "Load/reload secrets from the secrets file"
 end
 
 function toggle_production_aws_credentials -d "Toggles production aws env credentials."
-  test $AWS_SECRET_ACCESS_KEY
-
   load_secrets
+  test $AWS_SECRET_ACCESS_KEY
 
   if test $status -eq 0
     echo "Unsetting credentials"
