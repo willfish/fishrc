@@ -84,7 +84,7 @@ function deploy -d "Deploys each environment specified in the args using bundled
 end
 
 set -e quotes
-source ~/.quotes.fish
+source ~/.config/fish/quotes.fish
 
 function random_quote_api -d "Retrieves a random quote from a predefined list"
   set quote (curl -s "http://api.forismatic.com/api/1.0/?method=getQuote&format=text&lang=en")
