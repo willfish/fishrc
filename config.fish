@@ -1,35 +1,49 @@
+# Programs requiring mfa session
+
+alias aws="mfa aws"
+alias awslogs="mfa awslogs"
+alias aws-es-kibana="mfa aws-es-kibana"
+alias sam="mfa sam"
+alias terragrunt="mfa terragrunt"
+
+# Convenient project switching
+
+alias cdv="cd; cd .vim_runtime"
+alias cdr="cd $HOME/Repositories"
+alias md="cdr; cd mydrive"
 alias api="cdr; cd mydriveapi"
-alias aws="mydrive-aws-mfa aws"
-alias awslogs="mydrive-aws-mfa awslogs"
-alias cdb="cd; cd .berkshelf/cookbooks"  
-alias cdf="cdr; cd fun"  
+alias pp="cdr; cd phone-platform"
 alias cdg="cdr; cd mydrive-gems"
-alias cdr="cd $HOME/Repositories/mydrive/"
-alias cds="cd; cd support/"  
-alias cdv="cd; cd .vim_runtime"  
-alias cm="cdr; cd cassandra-models"
-alias dp="cdr; cd mydrive-data-pipeline-events"
-alias grep="grep --colour"
-alias heroku="/usr/local/bin/heroku"  
+alias cdt="cdr; cd mydrive-terraform"
 alias inf="cdr; cd mydrive-infrastructure"
 alias int="cdr; cd mydrive-integration-testing"
-alias jd="cdr; cd jdis"
-alias kc="kitchen destroy all; and kitchen converge; and kitchen destroy all"
-alias ls="ls -FG"  
-alias md="cdr; cd mydrive"
-alias pp="cdr; cd phone-platform"
+alias cdf="cdr; cd fun"
+
+# Convenient utilities
+
+alias branch="git symbolic-ref --short HEAD"
+alias grep="grep --colour"
+alias ls="ls -FG"
+
 alias rc="bundle exec rails c"
-alias revenge="wine $HOME/revenge/ra2md.exe"
 alias rs="bundle exec rails s"
-alias sd="set -x AWS_PROFILE development"
-alias sm="set -x AWS_PROFILE productionmain"
+
+alias sep="sesame open production"
+
 alias sml="rlwrap sml"
-alias sp="set -x AWS_PROFILE production"
-alias ss="set -x AWS_PROFILE sandbox"
+
+alias sd="set -gx AWS_ACCOUNT development"
+alias sp="set -gx AWS_ACCOUNT production"
+alias ss="set -gx AWS_ACCOUNT sandbox"
+
 alias t="bundle exec rspec"
 alias tf="t --only-failures"
+
 alias vim="nvim"
 alias vimdiff="nvim -d"
+
+alias fallout="pushd $HOME/.wine/drive_c/GOG\ Games/Fallout\ 2/; wine fallout2.exe; popd"
+alias revenge="wine $HOME/revenge/ra2md.exe"
 
 function prepend_to_path -d "Prepend the given dir to PATH if it exists and is not already in it"
   if test -d $argv[1]
@@ -39,19 +53,20 @@ function prepend_to_path -d "Prepend the given dir to PATH if it exists and is n
   end
 end
 
-prepend_to_path "$HOME/Repositories/mydrive/mydrive-gems/mydrive-on-demand/bin"
+prepend_to_path "$HOME/bin"
 prepend_to_path "/usr/local/opt/cassandra@2.1/bin"
-prepend_to_path "/usr/bin"                
-prepend_to_path "/usr/local/bin"                
+prepend_to_path "/usr/bin"
+prepend_to_path "/usr/local/bin"
 prepend_to_path "/usr/local/sbin"
 prepend_to_path "/Applications/Postgres.app/Contents/Versions/9.4/bin"
 prepend_to_path "/usr/local/texlive/2014basic/bin/x86_64-darwin/"
-prepend_to_path "$HOME/.rbenv/bin"        
+prepend_to_path "$HOME/.rbenv/bin"
 prepend_to_path "/opt/chefdk/bin"
-prepend_to_path "$HOME/.rbenv/shims"       
-prepend_to_path "$HOME/.exenv/bin"
+prepend_to_path "$HOME/.rbenv/shims"
 prepend_to_path "$HOME/.pyenv/shims"
-prepend_to_path "$HOME/.exenv/shims"
+prepend_to_path "/usr/local/opt/inetutils/libexec/gnubin"
+prepend_to_path "/usr/local/opt/curl/bin"
+prepend_to_path "$HOME/.local/bin"
 
 function fish_prompt
   set_color $fish_color_cwd
@@ -62,25 +77,48 @@ function fish_prompt
 end
 
 function say_aws_profile
-  if test $AWS_PROFILE
-    if test $AWS_PROFILE = "sandbox"
-      set_color $fish_color_param
-    else if test $AWS_PROFILE = "development"
-      set_color $fish_color_param
-    else if test $AWS_PROFILE = "production"
+  if test $AWS_ACCOUNT
+    if test $AWS_ACCOUNT = "production"
       set_color $fish_color_error
-    else if test $AWS_PROFILE = "productionmain"
-      set_color $fish_color_error
+    else
+      set_color $fish_color_param
     end
   end
 
-  echo -n " $AWS_PROFILE"
+  echo -n " $AWS_ACCOUNT"
+end
+
+function mfa -d "Inject sts session into environment"
+  aws-runas $AWS_ACCOUNT $argv
+end
+
+function mydrive_aws_mfa_on
+  set -gx AWS_PROFILE $AWS_ACCOUNT
+  set -gx AWS_REGION "eu-west-1"
+end
+
+function mydrive_aws_mfa_off
+  set -e AWS_PROFILE
+  set -e AWS_REGION
+end
+
+function da -d "Deploy to all environments"
+  mydrive_aws_mfa_on
+  mydrive-aws-mfa
+  set -gx BRANCH (branch)
+  yes | bin/ecs_deploy_all
+  set -e BRANCH
+  mydrive_aws_mfa_off
 end
 
 function deploy -d "Deploys each environment specified in the args using bundled capistrano."
+  mydrive_aws_mfa_off
+  set -gx BRANCH (branch)
   for stage in $argv
-    bundle exec cap $stage deploy
+    mfa bin/ecs_deploy $stage
   end
+  set -e BRANCH
+  mydrive_aws_mfa_on
 end
 
 set -e quotes
@@ -97,69 +135,43 @@ function random_science_fiction_quote -d "Retrieves a random quote from a predef
   echo -e "\e[32m$quotes[$random_number]\e[0m"
 end
 
-function toggle_null_aws_credentials -d "Toggles nulls aws env credentials for sdk compatibility reasons."
-  test $AWS_SECRET_ACCESS_KEY
-
-  if test $status -eq 0
-    echo "Unsetting null credentials"
-    set -e AWS_SECRET_ACCESS_KEY
-    set -e AWS_ACCESS_KEY_ID
-  else
-    echo "Setting null credentials"
-    export AWS_SECRET_ACCESS_KEY="FAKE"
-    export AWS_ACCESS_KEY_ID="FAKE"
-  end
-end
-
-function load_secrets -d "Load/reload secrets from the secrets file"
-  source ~/.config/fish/secrets.fish
-end
-
-function toggle_production_aws_credentials -d "Toggles production aws env credentials."
-  load_secrets
-  test $AWS_SECRET_ACCESS_KEY
-
-  if test $status -eq 0
-    echo "Unsetting credentials"
-    set -e AWS_SECRET_ACCESS_KEY
-    set -e AWS_ACCESS_KEY_ID
-  else
-    echo "Setting production credentials"
-    set_production_access_key
-    set_production_secret_key
-  end
-end
+set -gx fish_greeting (random_science_fiction_quote)
 
 function how_long -d "How long have I been at MyDrive?"
   set -l how_long_file "/tmp/how_long"
 
-  test -f $how_long_file 
+  test -f $how_long_file
 
   if test $status -eq 0
-    cat $how_long_file 
+    cat $how_long_file
   else
     ~/.scripts/how_long.rb
   end
 end
 
-function cheat.sh
-  curl cheat.sh/$argv
+function list_directories
+  find . -type d -maxdepth 1 | awk -F'./' '{ print $2}' | sed '/^\s*$/d'
 end
-complete -c cheat.sh -xa "(curl -s cheat.sh/:list)"
 
-set -x AWS_PROFILE production
-set -x AWS_REGION eu-west-1
-set -x EDITOR /usr/local/bin/vim
-set -x ERL_AFLAGS "-kernel shell_history enabled"
-set -x LESS "-R"
-set -x OPSCODE_USER williamfish1987
-set -x ORGNAME mydrive
-set -x PYENV_ROOT "$HOME/.pyenv"
-set -x fish_greeting (random_science_fiction_quote)
-
+set -gx AWS_ACCOUNT production
+set -gx CFLAGS "-I(xcrun --show-sdk-path)/usr/include"
+set -gx CPPFLAGS "-I/usr/local/opt/openblas/include -I/usr/local/opt/readline/include"
+set -gx EDITOR /usr/local/bin/nvim
+set -gx ERL_AFLAGS "-kernel shell_history enabled"
+set -gx LDFLAGS "-L/usr/local/opt/openblas/lib -L/usr/local/opt/readline/lib"
+set -gx LESS "-R"
+set -gx MANPATH "/usr/local/opt/inetutils/libexec/gnuman:$MANPATH"
+set -gx OPSCODE_USER williamfish1987
+set -gx ORGNAME mydrive
+set -gx PKG_CONFIG_PATH "/usr/local/opt/openblas/lib/pkgconfig"
+set -gx PKG_CONFIG_PATH "/usr/local/opt/readline/lib/pkgconfig"
+set -gx PYENV_ROOT "$HOME/.pyenv"
 set -gx PYENV_SHELL fish
+set -gx SLACK_USER_ID U02DF9L76
+set -gx CFLAGS "-I"(brew --prefix openssl)"/include"
+set -gx LDFLAGS "-L"(brew --prefix openssl)"/lib"
 
-source "/usr/local/Cellar/pyenv/1.2.3/libexec/../completions/pyenv.fish"
+source "/usr/local/Cellar/pyenv/1.2.11/libexec/../completions/pyenv.fish"
 function pyenv
   set command $argv[1]
   set -e argv[1]
@@ -171,26 +183,9 @@ function pyenv
     command pyenv "$command" $argv
   end
 end
+
 command pyenv rehash 2>/dev/null
 
-rbenv rehash >/dev/null ^&1                             
+rbenv rehash >/dev/null ^&1
 
-set -x CFLAGS "-I"(brew --prefix openssl)"/include"
-set -x LDFLAGS "-L"(brew --prefix openssl)"/lib"
-
-exenv rehash 2>/dev/null
-
-function exenv
-  set command $argv[1]
-  set -e argv[1]
-
-  switch "$command"
-  case "shell"
-    source (exenv "sh-$command" "$argv"|psub)
-  case "*"
-    command exenv "$command" "$argv"
-  end
-end
-
-function fish_mode_prompt
-end
+source ~/.asdf/asdf.fish
