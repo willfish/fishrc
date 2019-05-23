@@ -1,12 +1,13 @@
 # Programs requiring mfa session
 
+alias mfa="aws-runas"
 alias aws="mfa aws"
 alias awslogs="mfa awslogs"
 alias aws-es-kibana="mfa aws-es-kibana"
 alias sam="mfa sam"
 alias terragrunt="mfa terragrunt"
 
-# Convenient project switching
+# Project switching
 
 alias cdv="cd; cd .vim_runtime"
 alias cdr="cd $HOME/Repositories"
@@ -32,9 +33,9 @@ alias sep="sesame open production"
 
 alias sml="rlwrap sml"
 
-alias sd="set -gx AWS_ACCOUNT development"
-alias sp="set -gx AWS_ACCOUNT production"
-alias ss="set -gx AWS_ACCOUNT sandbox"
+alias sd="set -gx AWS_PROFILE development"
+alias sp="set -gx AWS_PROFILE production"
+alias ss="set -gx AWS_PROFILE sandbox"
 
 alias t="bundle exec rspec"
 alias tf="t --only-failures"
@@ -60,82 +61,27 @@ prepend_to_path "/usr/local/bin"
 prepend_to_path "/usr/local/sbin"
 prepend_to_path "/Applications/Postgres.app/Contents/Versions/9.4/bin"
 prepend_to_path "/usr/local/texlive/2014basic/bin/x86_64-darwin/"
-prepend_to_path "$HOME/.rbenv/bin"
-prepend_to_path "/opt/chefdk/bin"
-prepend_to_path "$HOME/.rbenv/shims"
-prepend_to_path "$HOME/.pyenv/shims"
 prepend_to_path "/usr/local/opt/inetutils/libexec/gnubin"
 prepend_to_path "/usr/local/opt/curl/bin"
 prepend_to_path "$HOME/.local/bin"
 
-function fish_prompt
-  set_color $fish_color_cwd
-  echo -n (prompt_pwd)
-  say_aws_profile
-  set_color normal
-  echo " >: "
-end
-
-function say_aws_profile
-  if test $AWS_ACCOUNT
-    if test $AWS_ACCOUNT = "production"
-      set_color $fish_color_error
-    else
-      set_color $fish_color_param
-    end
-  end
-
-  echo -n " $AWS_ACCOUNT"
-end
-
-function mfa -d "Inject sts session into environment"
-  aws-runas $AWS_ACCOUNT $argv
-end
-
-function mydrive_aws_mfa_on
-  set -gx AWS_PROFILE $AWS_ACCOUNT
-  set -gx AWS_REGION "eu-west-1"
-end
-
-function mydrive_aws_mfa_off
-  set -e AWS_PROFILE
-  set -e AWS_REGION
-end
-
 function da -d "Deploy to all environments"
-  mydrive_aws_mfa_on
-  mydrive-aws-mfa
+  mfa
   set -gx BRANCH (branch)
-  yes | bin/ecs_deploy_all
+  yes | mfa bin/ecs_deploy_all
   set -e BRANCH
-  mydrive_aws_mfa_off
 end
 
-function deploy -d "Deploys each environment specified in the args using bundled capistrano."
-  mydrive_aws_mfa_off
+function d -d "Deploys each environment specified in the args using bundled capistrano."
+  mfa
   set -gx BRANCH (branch)
   for stage in $argv
     mfa bin/ecs_deploy $stage
   end
   set -e BRANCH
-  mydrive_aws_mfa_on
 end
 
-set -e quotes
-source ~/.config/fish/quotes.fish
-
-function random_quote_api -d "Retrieves a random quote from a predefined list"
-  set quote (curl -s "http://api.forismatic.com/api/1.0/?method=getQuote&format=text&lang=en")
-
-  echo -e "\e[32m$quote'\e[0m"
-end
-
-function random_science_fiction_quote -d "Retrieves a random quote from a predefined list"
-  set random_number (random 1 (count $quotes))
-  echo -e "\e[32m$quotes[$random_number]\e[0m"
-end
-
-set -gx fish_greeting (random_science_fiction_quote)
+set -e fish_greeting
 
 function how_long -d "How long have I been at MyDrive?"
   set -l how_long_file "/tmp/how_long"
@@ -149,43 +95,35 @@ function how_long -d "How long have I been at MyDrive?"
   end
 end
 
-function list_directories
-  find . -type d -maxdepth 1 | awk -F'./' '{ print $2}' | sed '/^\s*$/d'
-end
+set -gx AWS_PROFILE production
+set -gx AWS_REGION "eu-west-1"
 
-set -gx AWS_ACCOUNT production
-set -gx CFLAGS "-I(xcrun --show-sdk-path)/usr/include"
-set -gx CPPFLAGS "-I/usr/local/opt/openblas/include -I/usr/local/opt/readline/include"
+set -gx CFLAGS "-O2 -g"
+set -gx CFLAGS "$CFLAGS -I/usr/local/opt/openssl/include/openssl"
+set -gx CFLAGS "$CFLAGS -I"(xcrun --show-sdk-path)"/usr/include"
+
+set -gx CPPFLAGS "$CPPFLAGS -I/usr/local/opt/openssl/include/openssl"
+set -gx CPPFLAGS "$CPPFLAGS -I/usr/local/opt/openblas/include"
+set -gx CPPFLAGS "$CPPFLAGS -I/usr/local/opt/readline/include"
+set -gx CPPFLAGS "$CPPFLAGS -I/usr/local/opt/zlib/include"
+
 set -gx EDITOR /usr/local/bin/nvim
+
 set -gx ERL_AFLAGS "-kernel shell_history enabled"
-set -gx LDFLAGS "-L/usr/local/opt/openblas/lib -L/usr/local/opt/readline/lib"
+
+set -gx LDFLAGS "$LDFLAGS -L/usr/local/opt/openblas/lib"
+set -gx LDFLAGS "$LDFLAGS -L/usr/local/opt/openssl/lib"
+set -gx LDFLAGS "$LDFLAGS -L/usr/local/opt/readline/lib"
+set -gx LDFLAGS "$LDFLAGS -L/usr/local/opt/zlib/lib"
+
 set -gx LESS "-R"
 set -gx MANPATH "/usr/local/opt/inetutils/libexec/gnuman:$MANPATH"
 set -gx OPSCODE_USER williamfish1987
 set -gx ORGNAME mydrive
-set -gx PKG_CONFIG_PATH "/usr/local/opt/openblas/lib/pkgconfig"
-set -gx PKG_CONFIG_PATH "/usr/local/opt/readline/lib/pkgconfig"
-set -gx PYENV_ROOT "$HOME/.pyenv"
-set -gx PYENV_SHELL fish
+set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/openblas/lib/pkgconfig"
+set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/openssl/lib/pkgconfig"
+set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/readline/lib/pkgconfig"
+set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/zlib/lib/pkgconfig"
 set -gx SLACK_USER_ID U02DF9L76
-set -gx CFLAGS "-I"(brew --prefix openssl)"/include"
-set -gx LDFLAGS "-L"(brew --prefix openssl)"/lib"
 
-source "/usr/local/Cellar/pyenv/1.2.11/libexec/../completions/pyenv.fish"
-function pyenv
-  set command $argv[1]
-  set -e argv[1]
-
-  switch "$command"
-  case rehash shell
-    source (pyenv "sh-$command" $argv|psub)
-  case "*"
-    command pyenv "$command" $argv
-  end
-end
-
-command pyenv rehash 2>/dev/null
-
-rbenv rehash >/dev/null ^&1
-
-source ~/.asdf/asdf.fish
+source /usr/local/opt/asdf/asdf.fish
