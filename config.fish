@@ -22,7 +22,6 @@ alias cdf="cdr; cd fun"
 
 # Convenient utilities
 
-alias branch="git symbolic-ref --short HEAD"
 alias grep="grep --colour"
 alias ls="ls -FG"
 
@@ -37,7 +36,7 @@ alias sd="set -gx AWS_PROFILE development"
 alias sp="set -gx AWS_PROFILE production"
 alias ss="set -gx AWS_PROFILE sandbox"
 
-alias t="bundle exec rspec"
+alias t="mfa bundle exec rspec"
 alias tf="t --only-failures"
 
 alias vim="nvim"
@@ -67,21 +66,17 @@ prepend_to_path "$HOME/.local/bin"
 
 function da -d "Deploy to all environments"
   mfa
-  set -gx BRANCH (branch)
   yes | mfa bin/ecs_deploy_all
-  set -e BRANCH
 end
 
 function d -d "Deploys each environment specified in the args using bundled capistrano."
+  set -gx BRANCH (git rev-parse --abbrev-ref HEAD)
   mfa
-  set -gx BRANCH (branch)
   for stage in $argv
     mfa bin/ecs_deploy $stage
   end
   set -e BRANCH
 end
-
-set -e fish_greeting
 
 function how_long -d "How long have I been at MyDrive?"
   set -l how_long_file "/tmp/how_long"
@@ -94,6 +89,8 @@ function how_long -d "How long have I been at MyDrive?"
     ~/.scripts/how_long.rb
   end
 end
+
+set -gx fish_greeting ""
 
 set -gx AWS_PROFILE production
 set -gx AWS_REGION "eu-west-1"
@@ -108,7 +105,6 @@ set -gx CPPFLAGS "$CPPFLAGS -I/usr/local/opt/readline/include"
 set -gx CPPFLAGS "$CPPFLAGS -I/usr/local/opt/zlib/include"
 
 set -gx EDITOR /usr/local/bin/nvim
-
 set -gx ERL_AFLAGS "-kernel shell_history enabled"
 
 set -gx LDFLAGS "$LDFLAGS -L/usr/local/opt/openblas/lib"
@@ -118,12 +114,16 @@ set -gx LDFLAGS "$LDFLAGS -L/usr/local/opt/zlib/lib"
 
 set -gx LESS "-R"
 set -gx MANPATH "/usr/local/opt/inetutils/libexec/gnuman:$MANPATH"
+
 set -gx OPSCODE_USER williamfish1987
 set -gx ORGNAME mydrive
+set -gx SLACK_USER_ID U02DF9L76
+
 set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/openblas/lib/pkgconfig"
 set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/openssl/lib/pkgconfig"
 set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/readline/lib/pkgconfig"
 set -gx PKG_CONFIG_PATH "$PKG_CONFIG_PATH /usr/local/opt/zlib/lib/pkgconfig"
-set -gx SLACK_USER_ID U02DF9L76
+
+set -gx PYTHON_CONFIGURE_OPTS "--enable-framework"
 
 source /usr/local/opt/asdf/asdf.fish
