@@ -9,13 +9,21 @@ end
 prepend_to_path "$HOME/bin"
 prepend_to_path "$HOME/.local/bin"
 
-set -gx AWS_PROFILE production
-set -gx AWS_REGION "eu-west-1"
+set -gx ASDF_RUBY_BUILD_VERSION "master"
 set -gx EDITOR "$HOME/.asdf/shims/nvim"
 set -gx ERL_AFLAGS "-kernel shell_history enabled"
 set -gx LESS "-R"
 set -gx fish_greeting ""
-set -gx ASDF_RUBY_BUILD_VERSION "master"
+set -gx SAM_CLI_TELEMETRY 0
+
+# Linux Brew
+
+set -gx HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew";
+set -gx HOMEBREW_CELLAR "/home/linuxbrew/.linuxbrew/Cellar";
+set -gx HOMEBREW_REPOSITORY "/home/linuxbrew/.linuxbrew/Homebrew";
+set -g fish_user_paths "/home/linuxbrew/.linuxbrew/bin" "/home/linuxbrew/.linuxbrew/sbin" $fish_user_paths;
+set -q MANPATH; or set MANPATH ''; set -gx MANPATH "/home/linuxbrew/.linuxbrew/share/man" $MANPATH;
+set -q INFOPATH; or set INFOPATH ''; set -gx INFOPATH "/home/linuxbrew/.linuxbrew/share/info" $INFOPATH;
 
 alias vim="nvim"
 
@@ -29,17 +37,27 @@ alias rc="bundle exec rails console"
 alias t="bundle exec rspec"
 alias g="git"
 
-function harsh -d "Danger find pids relating to program and harsh kill them"
-  for pid in (ps uax | grep $argv[1] | grep -v grep | awk '{print $2}')
-    kill -9 $pid
-  end
+function pomegranate_env -d "Load environment credentials for pomegranate"
+  clear_env
+  set env_file ~/.aws_pomegranate.fish
+  source $env_file
 end
 
-if [ (uname) == "Darwin" ]
-  source /usr/local/opt/asdf/asdf.fish
-  prepend_to_path "/usr/local/opt/openvpn/sbin"
-else
-  source ~/.asdf/asdf.fish
+function personal_env -d "Load environment credentials for personal"
+  clear_env
+  set -l env_file ~/.aws_personal.fish
+  source $env_file
+end
+
+function clear_env -d "Clears all AWS environment variables"
+  set -e AWS_ACCESS_KEY_ID
+  set -e AWS_SECRET_ACCESS_KEY
+end
+
+function harsh -d "Danger find pids relating to program and harsh kill them"
+  for pid in (ps uax | grep $argv[1] | grep -v grep | awk '{print $2}')
+    sudo kill -9 $pid
+  end
 end
 
 function install_notes
@@ -85,3 +103,11 @@ function standup -d "Open today's standup notes"
   vim $note_file
   popd $notes_directory
 end
+
+if [ (uname) == "Darwin" ]
+  source /usr/local/opt/asdf/asdf.fish
+  prepend_to_path "/usr/local/opt/openvpn/sbin"
+else
+  source ~/.asdf/asdf.fish
+end
+
