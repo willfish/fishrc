@@ -25,18 +25,6 @@ set -g fish_user_paths "/home/linuxbrew/.linuxbrew/bin" "/home/linuxbrew/.linuxb
 set -q MANPATH; or set MANPATH ''; set -gx MANPATH "/home/linuxbrew/.linuxbrew/share/man" $MANPATH;
 set -q INFOPATH; or set INFOPATH ''; set -gx INFOPATH "/home/linuxbrew/.linuxbrew/share/info" $INFOPATH;
 
-alias vim="nvim"
-
-alias cdv="cd ~/.vim_runtime"
-alias cdr="cd ~/Repositories"
-alias cdf="cdr; cd fun"
-
-alias t="bundle exec rspec"
-alias rs="bundle exec rails server"
-alias rc="bundle exec rails console"
-alias t="bundle exec rspec"
-alias g="git"
-
 function pomegranate_env -d "Load environment credentials for pomegranate"
   clear_env
   set env_file ~/.aws_pomegranate.fish
@@ -110,4 +98,3 @@ if [ (uname) == "Darwin" ]
 else
   source ~/.asdf/asdf.fish
 end
-
