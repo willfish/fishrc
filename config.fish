@@ -8,6 +8,7 @@ end
 
 prepend_to_path "$HOME/bin"
 prepend_to_path "$HOME/.local/bin"
+prepend_to_path "/usr/local/bin"
 
 set -gx ASDF_RUBY_BUILD_VERSION "master"
 set -gx EDITOR "$HOME/.asdf/shims/nvim"
@@ -16,15 +17,17 @@ set -gx LESS "-R"
 set -gx fish_greeting ""
 set -gx SAM_CLI_TELEMETRY 0
 
-# Linux Brew
-
-set -gx HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew";
-set -gx HOMEBREW_CELLAR "/home/linuxbrew/.linuxbrew/Cellar";
-set -gx HOMEBREW_REPOSITORY "/home/linuxbrew/.linuxbrew/Homebrew";
-set -gx theme_nerd_fonts yes
-set -gx fish_user_paths "/home/linuxbrew/.linuxbrew/bin" "/home/linuxbrew/.linuxbrew/sbin" $fish_user_paths;
-set -qx MANPATH; or set MANPATH ''; set -gx MANPATH "/home/linuxbrew/.linuxbrew/share/man" $MANPATH;
-set -qx INFOPATH; or set INFOPATH ''; set -gx INFOPATH "/home/linuxbrew/.linuxbrew/share/info" $INFOPATH;
+if [ (uname) = "Darwin" ]
+else
+  # Linux Brew
+  set -gx HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew";
+  set -gx HOMEBREW_CELLAR "/home/linuxbrew/.linuxbrew/Cellar";
+  set -gx HOMEBREW_REPOSITORY "/home/linuxbrew/.linuxbrew/Homebrew";
+  set -qx MANPATH; or set MANPATH ''; set -gx MANPATH "/home/linuxbrew/.linuxbrew/share/man" $MANPATH;
+  set -qx INFOPATH; or set INFOPATH ''; set -gx INFOPATH "/home/linuxbrew/.linuxbrew/share/info" $INFOPATH;
+  set -gx fish_user_paths "/home/linuxbrew/.linuxbrew/bin" "/home/linuxbrew/.linuxbrew/sbin" $fish_user_paths;
+  set -gx theme_nerd_fonts yes
+end
 
 function pomegranate_env -d "Load environment credentials for pomegranate"
   clear_env
