@@ -1,7 +1,23 @@
-function prepend_to_path -d "Prepend the given dir to PATH if it exists and is not already in it"
+function prepend_to_path
   if test -d $argv[1]
     if not contains $argv[1] $PATH
       set -gx PATH "$argv[1]" $PATH
+    end
+  end
+end
+
+function prepend_to_info
+  if test -d $argv[1]
+    if not contains $argv[1] $PATH
+      set -gx INFOPATH "$argv[1]" $PATH
+    end
+  end
+end
+
+function prepend_to_man
+  if test -d $argv[1]
+    if not contains $argv[1] $PATH
+      set -gx MANPATH "$argv[1]" $PATH
     end
   end
 end
@@ -16,6 +32,8 @@ set -gx ERL_AFLAGS "-kernel shell_history enabled"
 set -gx LESS "-R"
 set -gx fish_greeting ""
 set -gx SAM_CLI_TELEMETRY 0
+set -gx CHANGELOG_GITHUB_TOKEN "6147ea4fb715614e605df3392e9d94d7e3db05bd"
+set -gx MANPAGER 'nvim +Man!'
 
 if [ (uname) = "Darwin" ]
 else
@@ -23,8 +41,11 @@ else
   set -gx HOMEBREW_PREFIX "/home/linuxbrew/.linuxbrew";
   set -gx HOMEBREW_CELLAR "/home/linuxbrew/.linuxbrew/Cellar";
   set -gx HOMEBREW_REPOSITORY "/home/linuxbrew/.linuxbrew/Homebrew";
-  set -qx MANPATH; or set MANPATH ''; set -gx MANPATH "/home/linuxbrew/.linuxbrew/share/man" $MANPATH;
-  set -qx INFOPATH; or set INFOPATH ''; set -gx INFOPATH "/home/linuxbrew/.linuxbrew/share/info" $INFOPATH;
+
+  prepend_to_man "/home/linuxbrew/.linuxbrew/share/man" 
+  prepend_to_info "/home/linuxbrew/.linuxbrew/share/info" 
+  prepend_to_info "/usr/share/terminfo"
+
   set -gx fish_user_paths "/home/linuxbrew/.linuxbrew/bin" "/home/linuxbrew/.linuxbrew/sbin" $fish_user_paths;
   set -gx theme_nerd_fonts yes
 end
@@ -111,4 +132,12 @@ if [ (uname) = "Darwin" ]
   prepend_to_path "/usr/local/opt/openvpn/sbin"
 else
   source ~/.asdf/asdf.fish
+end
+
+if not pgrep -f ssh-agent > /dev/null
+  eval (ssh-agent -c)
+  set -Ux SSH_AUTH_SOCK $SSH_AUTH_SOCK
+  set -Ux SSH_AGENT_PID $SSH_AGENT_PID
+  set -Ux SSH_AUTH_SOCK $SSH_AUTH_SOCK
+  ssh-add
 end
