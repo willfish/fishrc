@@ -32,7 +32,6 @@ set -gx ERL_AFLAGS "-kernel shell_history enabled"
 set -gx LESS "-R"
 set -gx fish_greeting ""
 set -gx SAM_CLI_TELEMETRY 0
-set -gx CHANGELOG_GITHUB_TOKEN "6147ea4fb715614e605df3392e9d94d7e3db05bd"
 set -gx MANPAGER 'nvim +Man!'
 
 if [ (uname) = "Darwin" ]
